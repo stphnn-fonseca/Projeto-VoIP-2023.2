@@ -40,12 +40,12 @@ function sendMessageToUsername($username, $message) {
 
         $context  = stream_context_create($options);
         $result = file_get_contents($sendMessageUrl, false, $context);
-
+        $agi->stream_file('/root/aluno/telegram/audios/enviada');
         if ($result === FALSE) {
             $agi->verbose('Erro ao enviar a mensagem.');
             $agi->stream_file('/root/aluno/telegram/audios/pro');
         } else {
-            $agi->stream_file('/root/aluno/telegram/audios/enviada');
+           
             $agi->verbose('Mensagem enviada com sucesso.');
         }
     }
@@ -93,10 +93,10 @@ function obterLinkNoticia($noticias, $indice) {
 }
 
 $links = array(
-    '/root/aluno/telegram/1.rss',
-    '/root/aluno/telegram/2.rss',
-    '/root/aluno/telegram/3.rss',
-    '/root/aluno/telegram/4.rss'
+    'https://g1.globo.com/dynamo/educacao/rss2.xml',
+    'https://g1.globo.com/dynamo/politica/mensalao/rss2.xml',
+    'https://g1.globo.com/dynamo/tecnologia/rss2.xml',
+    'https://g1.globo.com/dynamo/rn/rio-grande-do-norte/rss2.xml'
 );
 
 function menu1($links){
@@ -123,24 +123,25 @@ while ($escolhaNoticia != 9) {
     }
     
     $agi->stream_file('/root/aluno/telegram/audios/notitele');
-    $noticias = mostrarTitulosNoticias($linkEscolhido);
     $agi->stream_file('/root/aluno/telegram/audios/voltar');
+    $noticias = mostrarTitulosNoticias($linkEscolhido);
+    
     $resultado = $agi->get_data('beep', 5000, 1);
     $escolhaNoticia = intval($resultado['result']);
     $agi->verbose("Escolha 2: $escolhaNoticia");
   } while ($escolhaNoticia < 1 || $escolhaNoticia > count($noticias));
     $linkNoticiaEscolhida = (string) obterLinkNoticia($noticias, $escolhaNoticia - 1);
     $tituloNoticia = (string) $noticias[$escolhaNoticia - 1]->title;
-    $username = (string) $agi->get_variable('username');
+    $username = $agi->get_variable('username');
+    $user = $username['data'];
     $agi->verbose((string) $linkNoticiaEscolhida);
     $agi->verbose((string) $tituloNoticia);
-    $agi->verbose((string) $user['data']);
-    $message = "Olá! Eu sou o seu bot de notícias.\n\nAqui está a notícia escolhida\n\n$tituloNoticia\n\n$linkNoticia";
+    $agi->verbose((string) $user);
+    $message = "Olá! Eu sou o seu bot de notícias.\n\nAqui está a notícia escolhida\n\n$tituloNoticia\n\n $linkNoticiaEscolhida ";
     $agi->verbose($message); 
-    sendMessageToUsername($username, $message);
+    sendMessageToUsername($user, $message);
 }
-$agi->stream_file('/root/aluno/telegram/audios/fimr');
+$agi->stream_file('/root/aluno/telegram/audios/fim');
 $agi->hangup();
     
 ?>
-
