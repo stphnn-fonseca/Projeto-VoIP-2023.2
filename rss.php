@@ -8,6 +8,7 @@ $agi = new AGI();
 $agi->answer();
 
 function sendMessageToUsername($username, $message) {
+    global $agi;
     $botToken = '6683963944:AAGLXvJPU2Qj307AIvy9ifNviIQsTHcQ-vQ';
     $apiUrl = "https://api.telegram.org/bot{$botToken}/getUpdates";
     $updates = json_decode(file_get_contents($apiUrl), true);
@@ -17,12 +18,12 @@ function sendMessageToUsername($username, $message) {
         $user = $update['message']['chat'];
         if (isset($user['username']) && $user['username'] === $username) {
             $chatId = $user['id'];
-            break;
+           // break;
         }
     }
 
     if ($chatId === null) {
-        // $agi->verbose("Não foi possível encontrar o chat_id para o usuário {$username}");
+        $$agi->stream_file('/root/aluno/telegram/audios/nao');
     } else {
         $sendMessageUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
         $data = array(
@@ -40,16 +41,21 @@ function sendMessageToUsername($username, $message) {
 
         $context  = stream_context_create($options);
         $result = file_get_contents($sendMessageUrl, false, $context);
-        
+      
         if ($result === FALSE) {
-            // $agi->verbose('Erro ao enviar a mensagem.');
-            //$agi->stream_file('/root/aluno/telegram/audios/pro');
+            $agi->verbose('Erro ao enviar a mensagem.');
+            $agi->stream_file('/root/aluno/telegram/audios/pro');
         } else {
-            //$agi->stream_file('/root/aluno/telegram/audios/enviada.wav');
-            // $agi->verbose('Mensagem enviada com sucesso.');
+            $agi->stream_file('/root/aluno/telegram/audios/enviada');
+            $agi->verbose('Mensagem enviada com sucesso.');
         }
+  
+    
+       
     }
+    
 }
+
 
 function removerCaracteresEspeciais($str) {
     // Substitui todos os caracteres especiais por uma string vazia
@@ -141,7 +147,7 @@ while ($escolhaNoticia != 9) {
     $message = "Olá! Eu sou o seu bot de notícias.\n\nAqui está a notícia escolhida\n\n$tituloNoticia\n\n $linkNoticiaEscolhida ";
     $agi->verbose($message); 
     sendMessageToUsername($user, $message);
-    $agi->stream_file('/root/aluno/telegram/audios/enviada');
+    //$agi->stream_file('/root/aluno/telegram/audios/enviada');
 }
 $agi->stream_file('/root/aluno/telegram/audios/fim');
 $agi->hangup();
