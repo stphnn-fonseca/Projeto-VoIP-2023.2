@@ -22,7 +22,7 @@ function sendMessageToUsername($username, $message) {
     }
 
     if ($chatId === null) {
-        $agi->verbose("Não foi possível encontrar o chat_id para o usuário {$username}");
+        // $agi->verbose("Não foi possível encontrar o chat_id para o usuário {$username}");
     } else {
         $sendMessageUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
         $data = array(
@@ -40,16 +40,17 @@ function sendMessageToUsername($username, $message) {
 
         $context  = stream_context_create($options);
         $result = file_get_contents($sendMessageUrl, false, $context);
-        $agi->stream_file('/root/aluno/telegram/audios/enviada');
+        
         if ($result === FALSE) {
-            $agi->verbose('Erro ao enviar a mensagem.');
-            $agi->stream_file('/root/aluno/telegram/audios/pro');
+            // $agi->verbose('Erro ao enviar a mensagem.');
+            //$agi->stream_file('/root/aluno/telegram/audios/pro');
         } else {
-           
-            $agi->verbose('Mensagem enviada com sucesso.');
+            //$agi->stream_file('/root/aluno/telegram/audios/enviada.wav');
+            // $agi->verbose('Mensagem enviada com sucesso.');
         }
     }
 }
+
 function removerCaracteresEspeciais($str) {
     // Substitui todos os caracteres especiais por uma string vazia
     $strSemEspeciais = preg_replace('/[^\p{L}\p{N}\s]/u', '', $str);
@@ -140,6 +141,7 @@ while ($escolhaNoticia != 9) {
     $message = "Olá! Eu sou o seu bot de notícias.\n\nAqui está a notícia escolhida\n\n$tituloNoticia\n\n $linkNoticiaEscolhida ";
     $agi->verbose($message); 
     sendMessageToUsername($user, $message);
+    $agi->stream_file('/root/aluno/telegram/audios/enviada');
 }
 $agi->stream_file('/root/aluno/telegram/audios/fim');
 $agi->hangup();
