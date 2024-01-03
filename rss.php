@@ -1,107 +1,146 @@
+#!/usr/bin/php
 <?php
 
-ini_set('default_charset','UTF-8');
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+require('phpagi.php');
 
-// Carregue a biblioteca PHPMailer
-require 'Exception.php';
-require 'PHPMailer.php';
-require 'SMTP.php';
+$agi = new AGI();
 
-function enviarEmail($emailDestino, $linkNoticia, $tituloNoticia) {
-    $mail = new PHPMailer(true);
+$agi->answer();
 
-    try {
-        // Configurações do servidor SMTP do Gmail
-        $mail->isSMTP();
-        $mail->Host       = 'smtp-mail.outlook.com';
-        $mail->SMTPAuth   =  true;
-        $mail->Username   = 'voipnoticias@outlook.com';
-        $mail->Password   = 'Voip2023';
-        $mail->SMTPSecure = 'tls'; // Ou use 'ssl'
-        $mail->Port       = 587;
+function sendMessageToUsername($username, $message) {
+    $botToken = '6683963944:AAGLXvJPU2Qj307AIvy9ifNviIQsTHcQ-vQ';
+    $apiUrl = "https://api.telegram.org/bot{$botToken}/getUpdates";
+    $updates = json_decode(file_get_contents($apiUrl), true);
 
-        // Configurações do email
-        $mail->setFrom('voipnoticias@outlook.com', 'Seu Nome');
-        $mail->addAddress($emailDestino);
-        $mail->Subject = 'Assunto do Email';
+    $chatId = null;
+    foreach ($updates['result'] as $update) {
+        $user = $update['message']['chat'];
+        if (isset($user['username']) && $user['username'] === $username) {
+            $chatId = $user['id'];
+            break;
+        }
+    }
 
-        // Mensagem do e-mail
-        $mail->Body = "Prezado(a),
+    if ($chatId === null) {
+        $agi->verbose("Não foi possível encontrar o chat_id para o usuário {$username}");
+    } else {
+        $sendMessageUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
+        $data = array(
+            'chat_id' => $chatId,
+            'text' => $message,
+        );
 
-        Espero que este e-mail encontre você bem e em ótimo espírito! É um prazer compartilhar essa notícia com você. Para acessar a notícia completa, basta clicar no link abaixo:
+        $options = array(
+            'http' => array(
+                'method'  => 'POST',
+                'content' => json_encode($data),
+                'header' => "Content-Type: application/json\n",
+            ),
+        );
 
-        $tituloNoticia
-        $linkNoticia
+        $context  = stream_context_create($options);
+        $result = file_get_contents($sendMessageUrl, false, $context);
 
-        Por favor, note que esta é uma mensagem automática.
-
-        Atenciosamente,";
-
-        // Envia o email
-        $mail->send();
-        echo 'Email enviado com sucesso!';
-    } catch (Exception $e) {
-        echo "Erro ao enviar o email: {$mail->ErrorInfo}";
+        if ($result === FALSE) {
+            $agi->verbose('Erro ao enviar a mensagem.');
+            $agi->stream_file('/root/aluno/telegram/audios/pro');
+        } else {
+            $agi->stream_file('/root/aluno/telegram/audios/enviada');
+            $agi->verbose('Mensagem enviada com sucesso.');
+        }
     }
 }
+function removerCaracteresEspeciais($str) {
+    // Substitui todos os caracteres especiais por uma string vazia
+    $strSemEspeciais = preg_replace('/[^\p{L}\p{N}\s]/u', '', $str);
+
+    return $strSemEspeciais;
+}
+
+
+
 
 function mostrarTitulosNoticias($rssLink) {
-    // Inclui a biblioteca SimpleXML para análise de XML
+    global $agi;
     $rss = simplexml_load_file($rssLink);
-
-    // Verifica se o RSS foi carregado corretamente
+       
     if ($rss === false) {
-        echo "Erro ao carregar o RSS.";
-        return array(); // Retorna um array vazio se houver erro
+        $agi->verbose('Erro ao carregar o RSS.');
+        return array();
     }
 
-    // Mostra os títulos das 5 principais notícias
     $count = min(count($rss->channel->item), 5);
     for ($i = 0; $i < $count; $i++) {
         $titulo = $rss->channel->item[$i]->title;
-        echo ($i + 1) . ". $titulo\n";
+        $n = $i + 1;
+        $agi->say_digits($n); 
+        $string = removerCaracteresEspeciais((string) $titulo);  
+        $agi->verbose(gettype($string)); 
+        
+        exec('espeak --clearcache'); 
+        $agi->exec('espeak', "\"$string\"", 'any');
+                
+        sleep(1);
+        $agi->verbose("$n - $titulo");
     }
-
+ 
     return $rss->channel->item;
 }
+
 
 function obterLinkNoticia($noticias, $indice) {
     return $noticias[$indice]->link;
 }
 
-// Array de links
 $links = array(
-    'https://g1.globo.com/dynamo/educacao/rss2.xml',
-    'https://g1.globo.com/dynamo/politica/mensalao/rss2.xml',
-    'https://g1.globo.com/dynamo/tecnologia/rss2.xml',
-    'https://g1.globo.com/dynamo/rn/rio-grande-do-norte/rss2.xml'
+    '/root/aluno/telegram/1.rss',
+    '/root/aluno/telegram/2.rss',
+    '/root/aluno/telegram/3.rss',
+    '/root/aluno/telegram/4.rss'
 );
 
-// Pergunta ao usuário qual link ele deseja
-do {
-    echo "Escolha um link (1 a 4): ";
-    $escolha = (int)readline(); // Leitura da entrada do usuário
-} while ($escolha < 1 || $escolha > count($links));
+function menu1($links){
+  global $agi;
+  do {
+      $agi->stream_file('/root/aluno/telegram/audios/inic');
+      $resultado = $agi->get_data('beep', 5000, 1);
+      $escolha = intval($resultado['result']);
+      $agi->verbose("Escolha 1: $escolha");
+  } while ($escolha < 1 || $escolha > count($links));
+  $linkEscolhido = $links[$escolha - 1];
+  
 
-$linkEscolhido = $links[$escolha - 1];
-$noticias = mostrarTitulosNoticias($linkEscolhido);
+  return $linkEscolhido;
 
-// Verifica se há notícias disponíveis
-if (!empty($noticias)) {
-    // Pergunta ao usuário qual notícia ele deseja
-    do {
-        echo "Escolha uma notícia (1 a 5): ";
-        $escolhaNoticia = (int)readline(); // Leitura da entrada do usuário
-    } while ($escolhaNoticia < 1 || $escolhaNoticia > count($noticias));
+};
 
-    $linkNoticiaEscolhida = obterLinkNoticia($noticias, $escolhaNoticia - 1);
-    $emailDestino = 'ESTEPHANNYbFONSECA@hotmail.com';
-    $linkNoticia = $linkNoticiaEscolhida;
-    $tituloNoticia = $noticias[$escolhaNoticia - 1]->title;
-    enviarEmail($emailDestino, $linkNoticia, $tituloNoticia);
-} else {
-    echo "Nenhuma notícia disponível.";
+$escolhaNoticia = 0;
+while ($escolhaNoticia != 9) {
+  do {
+    
+    if ($escolhaNoticia == 0) {
+      $linkEscolhido = menu1($links);
+    }
+    
+    $agi->stream_file('/root/aluno/telegram/audios/notitele');
+    $noticias = mostrarTitulosNoticias($linkEscolhido);
+    $agi->stream_file('/root/aluno/telegram/audios/voltar');
+    $resultado = $agi->get_data('beep', 5000, 1);
+    $escolhaNoticia = intval($resultado['result']);
+    $agi->verbose("Escolha 2: $escolhaNoticia");
+  } while ($escolhaNoticia < 1 || $escolhaNoticia > count($noticias));
+    $linkNoticiaEscolhida = (string) obterLinkNoticia($noticias, $escolhaNoticia - 1);
+    $tituloNoticia = (string) $noticias[$escolhaNoticia - 1]->title;
+    $username = (string) $agi->get_variable('username');
+    $agi->verbose((string) $linkNoticiaEscolhida);
+    $agi->verbose((string) $tituloNoticia);
+    $agi->verbose((string) $user['data']);
+    $message = "Olá! Eu sou o seu bot de notícias.\n\nAqui está a notícia escolhida\n\n$tituloNoticia\n\n$linkNoticia";
+    $agi->verbose($message); 
+    sendMessageToUsername($username, $message);
 }
+$agi->stream_file('/root/aluno/telegram/audios/fimr');
+$agi->hangup();
+    
 ?>
+
